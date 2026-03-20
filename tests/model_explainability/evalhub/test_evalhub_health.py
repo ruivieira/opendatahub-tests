@@ -4,15 +4,6 @@ from ocp_resources.route import Route
 from tests.model_explainability.evalhub.utils import validate_evalhub_health
 
 
-@pytest.mark.parametrize(
-    "model_namespace",
-    [
-        pytest.param(
-            {"name": "test-evalhub-health"},
-        ),
-    ],
-    indirect=True,
-)
 @pytest.mark.smoke
 @pytest.mark.model_explainability
 class TestEvalHubHealth:

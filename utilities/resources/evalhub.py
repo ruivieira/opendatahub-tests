@@ -17,6 +17,7 @@ class EvalHub(NamespacedResource):
         self,
         env: list[Any] | None = None,
         replicas: int | None = None,
+        providers: list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         r"""
@@ -25,11 +26,14 @@ class EvalHub(NamespacedResource):
 
             replicas (int): Number of replicas for the eval-hub deployment
 
+            providers (list[str]): List of provider names to enable (e.g. ["lm-evaluation-harness", "test"])
+
         """
         super().__init__(**kwargs)
 
         self.env = env
         self.replicas = replicas
+        self.providers = providers
 
     def to_dict(self) -> None:
 
@@ -44,5 +48,8 @@ class EvalHub(NamespacedResource):
 
             if self.replicas is not None:
                 _spec["replicas"] = self.replicas
+
+            if self.providers is not None:
+                _spec["providers"] = self.providers
 
     # End of generated code

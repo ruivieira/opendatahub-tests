@@ -7,15 +7,6 @@ from ocp_resources.route import Route
 from tests.model_explainability.evalhub.utils import get_evalhub_provider, list_evalhub_providers
 
 
-@pytest.mark.parametrize(
-    "model_namespace",
-    [
-        pytest.param(
-            {"name": "test-evalhub-providers"},
-        ),
-    ],
-    indirect=True,
-)
 @pytest.mark.sanity
 @pytest.mark.model_explainability
 class TestEvalHubProviders:
@@ -88,7 +79,7 @@ class TestEvalHubProviders:
         evalhub_scoped_token: str,
         evalhub_ca_bundle_file: str,
         evalhub_route: Route,
-        model_namespace: Namespace,
+        evalhub_team_a_namespace: Namespace,
     ) -> None:
         """Verify that a single provider can be retrieved by ID."""
         assert evalhub_providers_response.get("items") and len(evalhub_providers_response["items"]) > 0, (
@@ -101,7 +92,7 @@ class TestEvalHubProviders:
             token=evalhub_scoped_token,
             ca_bundle_file=evalhub_ca_bundle_file,
             provider_id=first_provider_id,
-            tenant=model_namespace.name,
+            tenant=evalhub_team_a_namespace.name,
         )
 
         assert data["resource"]["id"] == first_provider_id
@@ -110,7 +101,7 @@ class TestEvalHubProviders:
 
     def test_get_nonexistent_provider_returns_error(
         self,
-        model_namespace: Namespace,
+        evalhub_team_a_namespace: Namespace,
         evalhub_scoped_token: str,
         evalhub_providers_role_binding: RoleBinding,
         evalhub_ca_bundle_file: str,
@@ -123,56 +114,96 @@ class TestEvalHubProviders:
                 token=evalhub_scoped_token,
                 ca_bundle_file=evalhub_ca_bundle_file,
                 provider_id="nonexistent-provider-id",
-                tenant=model_namespace.name,
+                tenant=evalhub_team_a_namespace.name,
             )
         assert excinfo.value.response.status_code == 404
 
 
-@pytest.mark.parametrize(
-    "model_namespace",
-    [
-        pytest.param(
-            {"name": "test-evalhub-providers"},
-        ),
-    ],
-    indirect=True,
-)
 @pytest.mark.sanity
 @pytest.mark.model_explainability
 class TestEvalHubProvidersUnauthorised:
-    """Tests verifying that a user without providers RBAC is denied access."""
+    """Tests verifying that a user in a valid tenant namespace but without providers RBAC is rejected.
+
+    EvalHub uses a Kubernetes DelegatingAuthorizer (SAR-based). Standard Kubernetes RBAC returns
+    DecisionNoOpinion (not DecisionDeny) when no rule grants access, which EvalHub maps to 400.
+    """
 
     def test_list_providers_denied_without_role_binding(
         self,
-        model_namespace: Namespace,
+        evalhub_team_b_namespace: Namespace,
         evalhub_unauthorised_token: str,
         evalhub_ca_bundle_file: str,
         evalhub_route: Route,
     ) -> None:
-        """Verify that a user without providers ClusterRole binding gets 403."""
-        with pytest.raises(requests.exceptions.HTTPError, match="403"):
+        """Verify that a tenant user without the providers ClusterRole binding is rejected."""
+        with pytest.raises(requests.exceptions.HTTPError, match="400"):
             list_evalhub_providers(
                 host=evalhub_route.host,
                 token=evalhub_unauthorised_token,
                 ca_bundle_file=evalhub_ca_bundle_file,
-                tenant=model_namespace.name,
+                tenant=evalhub_team_b_namespace.name,
             )
 
     def test_get_provider_denied_without_role_binding(
         self,
-        model_namespace: Namespace,
+        evalhub_team_b_namespace: Namespace,
         evalhub_unauthorised_token: str,
         evalhub_ca_bundle_file: str,
         evalhub_route: Route,
         evalhub_providers_response: dict,
     ) -> None:
-        """Verify that a user without providers ClusterRole binding cannot get a provider."""
+        """Verify that a tenant user without the providers ClusterRole binding cannot get a provider."""
         provider_id = evalhub_providers_response["items"][0]["resource"]["id"]
-        with pytest.raises(requests.exceptions.HTTPError, match="403"):
+        with pytest.raises(requests.exceptions.HTTPError, match="400"):
             get_evalhub_provider(
                 host=evalhub_route.host,
                 token=evalhub_unauthorised_token,
                 ca_bundle_file=evalhub_ca_bundle_file,
                 provider_id=provider_id,
-                tenant=model_namespace.name,
+                tenant=evalhub_team_b_namespace.name,
+            )
+
+
+@pytest.mark.sanity
+@pytest.mark.model_explainability
+class TestEvalHubProvidersNonTenant:
+    """Tests verifying that requests scoped to a non-tenant namespace are rejected.
+
+    team-c is not labelled with the EvalHub tenant label and has no providers RBAC.
+    EvalHub's SAR-based authorizer returns 400 when no RBAC rule grants access.
+    """
+
+    def test_list_providers_rejected_for_non_tenant_namespace(
+        self,
+        evalhub_team_c_namespace: Namespace,
+        evalhub_non_tenant_token: str,
+        evalhub_ca_bundle_file: str,
+        evalhub_route: Route,
+    ) -> None:
+        """Verify that listing providers from a non-tenant namespace is rejected with 400."""
+        with pytest.raises(requests.exceptions.HTTPError, match="400"):
+            list_evalhub_providers(
+                host=evalhub_route.host,
+                token=evalhub_non_tenant_token,
+                ca_bundle_file=evalhub_ca_bundle_file,
+                tenant=evalhub_team_c_namespace.name,
+            )
+
+    def test_get_provider_rejected_for_non_tenant_namespace(
+        self,
+        evalhub_team_c_namespace: Namespace,
+        evalhub_non_tenant_token: str,
+        evalhub_ca_bundle_file: str,
+        evalhub_route: Route,
+        evalhub_providers_response: dict,
+    ) -> None:
+        """Verify that getting a provider from a non-tenant namespace is rejected with 400."""
+        provider_id = evalhub_providers_response["items"][0]["resource"]["id"]
+        with pytest.raises(requests.exceptions.HTTPError, match="400"):
+            get_evalhub_provider(
+                host=evalhub_route.host,
+                token=evalhub_non_tenant_token,
+                ca_bundle_file=evalhub_ca_bundle_file,
+                provider_id=provider_id,
+                tenant=evalhub_team_c_namespace.name,
             )
