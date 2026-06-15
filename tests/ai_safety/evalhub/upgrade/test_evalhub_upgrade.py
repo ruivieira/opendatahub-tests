@@ -63,9 +63,7 @@ class TestPreUpgradeEvalHub:
         )
         assert crd.exists, f"CRD {crd_name} not found"
 
-        served_versions = {
-            v["name"] for v in crd.instance.spec.versions if v.get("served", False)
-        }
+        served_versions = {v["name"] for v in crd.instance.spec.versions if v.get("served", False)}
         assert "v1alpha1" in served_versions
         assert "v1" in served_versions
 
@@ -120,15 +118,9 @@ class TestPostUpgradeEvalHub:
         )
         assert crd.exists, f"CRD {crd_name} not found after upgrade"
 
-        served_versions = {
-            v["name"] for v in crd.instance.spec.versions if v.get("served", False)
-        }
-        assert "v1alpha1" in served_versions, (
-            f"v1alpha1 no longer served after upgrade; versions: {served_versions}"
-        )
-        assert "v1" in served_versions, (
-            f"v1 no longer served after upgrade; versions: {served_versions}"
-        )
+        served_versions = {v["name"] for v in crd.instance.spec.versions if v.get("served", False)}
+        assert "v1alpha1" in served_versions, f"v1alpha1 no longer served after upgrade; versions: {served_versions}"
+        assert "v1" in served_versions, f"v1 no longer served after upgrade; versions: {served_versions}"
 
     @pytest.mark.post_upgrade
     def test_evalhub_post_upgrade_health(
@@ -201,12 +193,10 @@ class TestPostUpgradeEvalHub:
             namespace=model_namespace.name,
         )
         assert deployment.exists, (
-            f"EvalHub deployment '{evalhub_cr.name}' not found in "
-            f"namespace '{model_namespace.name}' after upgrade"
+            f"EvalHub deployment '{evalhub_cr.name}' not found in namespace '{model_namespace.name}' after upgrade"
         )
 
         available = any(
-            c.type == "Available" and c.status == "True"
-            for c in (deployment.instance.status.conditions or [])
+            c.type == "Available" and c.status == "True" for c in (deployment.instance.status.conditions or [])
         )
         assert available, "EvalHub deployment is not Available after upgrade"

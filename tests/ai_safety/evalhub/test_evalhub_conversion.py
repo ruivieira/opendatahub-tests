@@ -88,15 +88,9 @@ def test_evalhub_crd_serves_both_versions(
     )
     assert crd.exists, f"CRD {crd_name} not found"
 
-    served_versions = {
-        v["name"] for v in crd.instance.spec.versions if v.get("served", False)
-    }
-    assert "v1alpha1" in served_versions, (
-        f"v1alpha1 not served; served versions: {served_versions}"
-    )
-    assert "v1" in served_versions, (
-        f"v1 not served; served versions: {served_versions}"
-    )
+    served_versions = {v["name"] for v in crd.instance.spec.versions if v.get("served", False)}
+    assert "v1alpha1" in served_versions, f"v1alpha1 not served; served versions: {served_versions}"
+    assert "v1" in served_versions, f"v1 not served; served versions: {served_versions}"
 
 
 @pytest.mark.smoke
