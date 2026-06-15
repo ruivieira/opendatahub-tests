@@ -130,7 +130,7 @@ class TestEvalHubCRDConversion:
             namespace=model_namespace.name,
             database={
                 "type": "postgresql",
-                "secret": "db-secret",
+                "secret": "db-secret",  # pragma: allowlist secret
                 "maxOpenConns": 50,
                 "maxIdleConns": 10,
             },
@@ -145,7 +145,7 @@ class TestEvalHubCRDConversion:
                 ensure_exists=True,
             )
             assert result.instance.spec.database.type == "postgresql"
-            assert result.instance.spec.database.secret == "db-secret"
+            assert result.instance.spec.database.secret == "db-secret"  # pragma: allowlist secret
             assert result.instance.spec.database.maxOpenConns == 50
             assert result.instance.spec.database.maxIdleConns == 10
             assert set(result.instance.spec.providers) == {"lm-evaluation-harness", "garak"}
