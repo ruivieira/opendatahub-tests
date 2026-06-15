@@ -7,71 +7,24 @@ It is not available in RHOAI 2.25 or 3.4. These tests only apply to
 
 import pytest
 from kubernetes.dynamic import DynamicClient
-from kubernetes.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
+from ocp_resources.evalhub import EvalHub
 from ocp_resources.namespace import Namespace
 
 from tests.ai_safety.evalhub.constants import (
     EVALHUB_API_GROUP,
     EVALHUB_FULL_API_VERSION_V1,
     EVALHUB_FULL_API_VERSION_V1ALPHA1,
-    EVALHUB_KIND,
     EVALHUB_PLURAL,
 )
 
 
-def _evalhub_body(name: str, namespace: str, api_version: str) -> dict:
-    """Build an EvalHub resource body for a specific API version."""
-    return {
-        "apiVersion": api_version,
-        "kind": EVALHUB_KIND,
-        "metadata": {
-            "name": name,
-            "namespace": namespace,
-        },
-        "spec": {
-            "database": {"type": "sqlite"},
-            "providers": ["lm-evaluation-harness"],
-            "collections": ["leaderboard-v2"],
-        },
-    }
+class EvalHubV1(EvalHub):
+    api_version = EVALHUB_FULL_API_VERSION_V1
 
 
-def _evalhub_body_with_database(name: str, namespace: str, api_version: str) -> dict:
-    """Build an EvalHub resource body with full database configuration."""
-    return {
-        "apiVersion": api_version,
-        "kind": EVALHUB_KIND,
-        "metadata": {
-            "name": name,
-            "namespace": namespace,
-        },
-        "spec": {
-            "database": {
-                "type": "postgresql",
-                "secret": "db-secret",
-                "maxOpenConns": 50,
-                "maxIdleConns": 10,
-            },
-            "providers": ["lm-evaluation-harness", "garak"],
-            "collections": ["leaderboard-v2"],
-            "replicas": 1,
-        },
-    }
-
-
-def _get_resource(admin_client: DynamicClient, api_version: str):
-    """Get the DynamicClient resource handle for a specific EvalHub API version."""
-    return admin_client.resources.get(api_version=api_version, kind=EVALHUB_KIND)
-
-
-def _cleanup_evalhub(admin_client: DynamicClient, name: str, namespace: str) -> None:
-    """Delete an EvalHub resource, ignoring NotFound."""
-    try:
-        resource = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
-        resource.delete(name=name, namespace=namespace)
-    except NotFoundError, ResourceNotFoundError:
-        pass
+class EvalHubV1Alpha1(EvalHub):
+    api_version = EVALHUB_FULL_API_VERSION_V1ALPHA1
 
 
 @pytest.mark.smoke
@@ -133,21 +86,23 @@ class TestEvalHubCRDConversion:
         model_namespace: Namespace,
     ) -> None:
         """Create an EvalHub via v1alpha1 and read it back as v1."""
-        name = "conv-v1alpha1-to-v1"
-        body = _evalhub_body(name, model_namespace.name, EVALHUB_FULL_API_VERSION_V1ALPHA1)
-
-        v1alpha1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1ALPHA1)
-        v1alpha1_res.create(body=body, namespace=model_namespace.name)
-
-        try:
-            v1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
-            result = v1_res.get(name=name, namespace=model_namespace.name)
-
-            assert result.spec.database.type == "sqlite"
-            assert "lm-evaluation-harness" in result.spec.providers
-            assert "leaderboard-v2" in result.spec.collections
-        finally:
-            _cleanup_evalhub(admin_client, name, model_namespace.name)
+        with EvalHubV1Alpha1(
+            client=admin_client,
+            name="conv-v1alpha1-to-v1",
+            namespace=model_namespace.name,
+            database={"type": "sqlite"},
+            providers=["lm-evaluation-harness"],
+            collections=["leaderboard-v2"],
+        ) as evalhub:
+            result = EvalHubV1(
+                client=admin_client,
+                name=evalhub.name,
+                namespace=model_namespace.name,
+                ensure_exists=True,
+            )
+            assert result.instance.spec.database.type == "sqlite"
+            assert "lm-evaluation-harness" in result.instance.spec.providers
+            assert "leaderboard-v2" in result.instance.spec.collections
 
     def test_create_v1_read_as_v1alpha1(
         self,
@@ -155,21 +110,23 @@ class TestEvalHubCRDConversion:
         model_namespace: Namespace,
     ) -> None:
         """Create an EvalHub via v1 and read it back as v1alpha1."""
-        name = "conv-v1-to-v1alpha1"
-        body = _evalhub_body(name, model_namespace.name, EVALHUB_FULL_API_VERSION_V1)
-
-        v1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
-        v1_res.create(body=body, namespace=model_namespace.name)
-
-        try:
-            v1alpha1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1ALPHA1)
-            result = v1alpha1_res.get(name=name, namespace=model_namespace.name)
-
-            assert result.spec.database.type == "sqlite"
-            assert "lm-evaluation-harness" in result.spec.providers
-            assert "leaderboard-v2" in result.spec.collections
-        finally:
-            _cleanup_evalhub(admin_client, name, model_namespace.name)
+        with EvalHubV1(
+            client=admin_client,
+            name="conv-v1-to-v1alpha1",
+            namespace=model_namespace.name,
+            database={"type": "sqlite"},
+            providers=["lm-evaluation-harness"],
+            collections=["leaderboard-v2"],
+        ) as evalhub:
+            result = EvalHubV1Alpha1(
+                client=admin_client,
+                name=evalhub.name,
+                namespace=model_namespace.name,
+                ensure_exists=True,
+            )
+            assert result.instance.spec.database.type == "sqlite"
+            assert "lm-evaluation-harness" in result.instance.spec.providers
+            assert "leaderboard-v2" in result.instance.spec.collections
 
     def test_conversion_preserves_database_config(
         self,
@@ -177,23 +134,31 @@ class TestEvalHubCRDConversion:
         model_namespace: Namespace,
     ) -> None:
         """Create an EvalHub with full database config in v1alpha1, read as v1, verify fields."""
-        name = "conv-db-preserve"
-        body = _evalhub_body_with_database(name, model_namespace.name, EVALHUB_FULL_API_VERSION_V1ALPHA1)
-
-        v1alpha1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1ALPHA1)
-        v1alpha1_res.create(body=body, namespace=model_namespace.name)
-
-        try:
-            v1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
-            result = v1_res.get(name=name, namespace=model_namespace.name)
-
-            assert result.spec.database.type == "postgresql"
-            assert result.spec.database.secret == "db-secret"
-            assert result.spec.database.maxOpenConns == 50
-            assert result.spec.database.maxIdleConns == 10
-            assert set(result.spec.providers) == {"lm-evaluation-harness", "garak"}
-        finally:
-            _cleanup_evalhub(admin_client, name, model_namespace.name)
+        with EvalHubV1Alpha1(
+            client=admin_client,
+            name="conv-db-preserve",
+            namespace=model_namespace.name,
+            database={
+                "type": "postgresql",
+                "secret": "db-secret",
+                "maxOpenConns": 50,
+                "maxIdleConns": 10,
+            },
+            providers=["lm-evaluation-harness", "garak"],
+            collections=["leaderboard-v2"],
+            replicas=1,
+        ) as evalhub:
+            result = EvalHubV1(
+                client=admin_client,
+                name=evalhub.name,
+                namespace=model_namespace.name,
+                ensure_exists=True,
+            )
+            assert result.instance.spec.database.type == "postgresql"
+            assert result.instance.spec.database.secret == "db-secret"
+            assert result.instance.spec.database.maxOpenConns == 50
+            assert result.instance.spec.database.maxIdleConns == 10
+            assert set(result.instance.spec.providers) == {"lm-evaluation-harness", "garak"}
 
     def test_roundtrip_v1alpha1_to_v1_to_v1alpha1(
         self,
@@ -201,20 +166,28 @@ class TestEvalHubCRDConversion:
         model_namespace: Namespace,
     ) -> None:
         """Verify roundtrip: create as v1alpha1, read as v1, update via v1, read back as v1alpha1."""
-        name = "conv-roundtrip"
-        body = _evalhub_body(name, model_namespace.name, EVALHUB_FULL_API_VERSION_V1ALPHA1)
+        with EvalHubV1Alpha1(
+            client=admin_client,
+            name="conv-roundtrip",
+            namespace=model_namespace.name,
+            database={"type": "sqlite"},
+            providers=["lm-evaluation-harness"],
+            collections=["leaderboard-v2"],
+        ) as evalhub:
+            v1_result = EvalHubV1(
+                client=admin_client,
+                name=evalhub.name,
+                namespace=model_namespace.name,
+                ensure_exists=True,
+            )
+            assert v1_result.instance.spec.database.type == "sqlite"
 
-        v1alpha1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1ALPHA1)
-        v1alpha1_res.create(body=body, namespace=model_namespace.name)
-
-        try:
-            v1_res = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
-            v1_obj = v1_res.get(name=name, namespace=model_namespace.name)
-            assert v1_obj.spec.database.type == "sqlite"
-
-            roundtrip = v1alpha1_res.get(name=name, namespace=model_namespace.name)
-            assert roundtrip.spec.database.type == "sqlite"
-            assert "lm-evaluation-harness" in roundtrip.spec.providers
-            assert "leaderboard-v2" in roundtrip.spec.collections
-        finally:
-            _cleanup_evalhub(admin_client, name, model_namespace.name)
+            roundtrip = EvalHubV1Alpha1(
+                client=admin_client,
+                name=evalhub.name,
+                namespace=model_namespace.name,
+                ensure_exists=True,
+            )
+            assert roundtrip.instance.spec.database.type == "sqlite"
+            assert "lm-evaluation-harness" in roundtrip.instance.spec.providers
+            assert "leaderboard-v2" in roundtrip.instance.spec.collections

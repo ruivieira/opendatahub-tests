@@ -10,10 +10,17 @@ from tests.ai_safety.evalhub.constants import (
     EVALHUB_API_GROUP,
     EVALHUB_FULL_API_VERSION_V1,
     EVALHUB_FULL_API_VERSION_V1ALPHA1,
-    EVALHUB_KIND,
     EVALHUB_PLURAL,
 )
 from tests.ai_safety.evalhub.utils import validate_evalhub_health
+
+
+class EvalHubV1(EvalHub):
+    api_version = EVALHUB_FULL_API_VERSION_V1
+
+
+class EvalHubV1Alpha1(EvalHub):
+    api_version = EVALHUB_FULL_API_VERSION_V1ALPHA1
 
 
 @pytest.mark.parametrize(
@@ -75,12 +82,13 @@ class TestPreUpgradeEvalHub:
         evalhub_cr: EvalHub,
     ) -> None:
         """Verify the conversion webhook works before upgrade by reading the CR as v1."""
-        v1_res = admin_client.resources.get(
-            api_version=EVALHUB_FULL_API_VERSION_V1,
-            kind=EVALHUB_KIND,
+        result = EvalHubV1(
+            client=admin_client,
+            name=evalhub_cr.name,
+            namespace=model_namespace.name,
+            ensure_exists=True,
         )
-        result = v1_res.get(name=evalhub_cr.name, namespace=model_namespace.name)
-        assert result.spec.database.type == "sqlite"
+        assert result.instance.spec.database.type == "sqlite"
 
 
 @pytest.mark.parametrize(
@@ -144,14 +152,14 @@ class TestPostUpgradeEvalHub:
         evalhub_cr: EvalHub,
     ) -> None:
         """Verify the EvalHub CR status fields survived the upgrade."""
-        v1_res = admin_client.resources.get(
-            api_version=EVALHUB_FULL_API_VERSION_V1,
-            kind=EVALHUB_KIND,
+        result = EvalHubV1(
+            client=admin_client,
+            name=evalhub_cr.name,
+            namespace=model_namespace.name,
+            ensure_exists=True,
         )
-        result = v1_res.get(name=evalhub_cr.name, namespace=model_namespace.name)
-
-        assert result.status, "EvalHub status is empty after upgrade"
-        assert result.status.phase, "EvalHub phase is empty after upgrade"
+        assert result.instance.status, "EvalHub status is empty after upgrade"
+        assert result.instance.status.phase, "EvalHub phase is empty after upgrade"
 
     @pytest.mark.post_upgrade
     def test_evalhub_post_upgrade_conversion_still_works(
@@ -165,19 +173,21 @@ class TestPostUpgradeEvalHub:
         Read the pre-existing CR via both API versions to confirm
         the webhook is still converting correctly.
         """
-        v1_res = admin_client.resources.get(
-            api_version=EVALHUB_FULL_API_VERSION_V1,
-            kind=EVALHUB_KIND,
+        v1_obj = EvalHubV1(
+            client=admin_client,
+            name=evalhub_cr.name,
+            namespace=model_namespace.name,
+            ensure_exists=True,
         )
-        v1_obj = v1_res.get(name=evalhub_cr.name, namespace=model_namespace.name)
-        assert v1_obj.spec.database.type == "sqlite"
+        assert v1_obj.instance.spec.database.type == "sqlite"
 
-        v1alpha1_res = admin_client.resources.get(
-            api_version=EVALHUB_FULL_API_VERSION_V1ALPHA1,
-            kind=EVALHUB_KIND,
+        v1alpha1_obj = EvalHubV1Alpha1(
+            client=admin_client,
+            name=evalhub_cr.name,
+            namespace=model_namespace.name,
+            ensure_exists=True,
         )
-        v1alpha1_obj = v1alpha1_res.get(name=evalhub_cr.name, namespace=model_namespace.name)
-        assert v1alpha1_obj.spec.database.type == "sqlite"
+        assert v1alpha1_obj.instance.spec.database.type == "sqlite"
 
     @pytest.mark.post_upgrade
     def test_evalhub_post_upgrade_deployment_available(
@@ -197,6 +207,7 @@ class TestPostUpgradeEvalHub:
         )
 
         available = any(
-            c.type == "Available" and c.status == "True" for c in (deployment.instance.status.conditions or [])
+            condition.type == "Available" and condition.status == "True"
+            for condition in (deployment.instance.status.conditions or [])
         )
         assert available, "EvalHub deployment is not Available after upgrade"
