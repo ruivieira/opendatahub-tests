@@ -7,6 +7,7 @@ It is not available in RHOAI 2.25 or 3.4. These tests only apply to
 
 import pytest
 from kubernetes.dynamic import DynamicClient
+from kubernetes.dynamic.exceptions import NotFoundError, ResourceNotFoundError
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
 from ocp_resources.namespace import Namespace
 
@@ -69,7 +70,7 @@ def _cleanup_evalhub(admin_client: DynamicClient, name: str, namespace: str) -> 
     try:
         resource = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
         resource.delete(name=name, namespace=namespace)
-    except Exception:
+    except (NotFoundError, ResourceNotFoundError):
         pass
 
 
