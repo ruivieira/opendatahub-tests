@@ -8,19 +8,9 @@ from ocp_resources.route import Route
 
 from tests.ai_safety.evalhub.constants import (
     EVALHUB_API_GROUP,
-    EVALHUB_FULL_API_VERSION_V1,
-    EVALHUB_FULL_API_VERSION_V1ALPHA1,
     EVALHUB_PLURAL,
 )
-from tests.ai_safety.evalhub.utils import validate_evalhub_health
-
-
-class EvalHubV1(EvalHub):
-    api_version = EVALHUB_FULL_API_VERSION_V1
-
-
-class EvalHubV1Alpha1(EvalHub):
-    api_version = EVALHUB_FULL_API_VERSION_V1ALPHA1
+from tests.ai_safety.evalhub.utils import EvalHubV1, EvalHubV1Alpha1, validate_evalhub_health
 
 
 @pytest.mark.parametrize(

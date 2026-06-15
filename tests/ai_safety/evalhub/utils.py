@@ -2,12 +2,15 @@ import requests
 import structlog
 from kubernetes.dynamic import DynamicClient
 from ocp_resources.config_map import ConfigMap
+from ocp_resources.evalhub import EvalHub
 from ocp_resources.job import Job
 from ocp_resources.role_binding import RoleBinding
 from ocp_resources.service_account import ServiceAccount
 from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
 from tests.ai_safety.evalhub.constants import (
+    EVALHUB_FULL_API_VERSION_V1,
+    EVALHUB_FULL_API_VERSION_V1ALPHA1,
     EVALHUB_COLLECTIONS_PATH,
     EVALHUB_HEALTH_PATH,
     EVALHUB_HEALTH_STATUS_HEALTHY,
@@ -29,6 +32,15 @@ from utilities.guardrails import get_auth_headers
 from utilities.kueue_utils import Workload
 
 LOGGER = structlog.get_logger(name=__name__)
+
+
+class EvalHubV1(EvalHub):
+    api_version = EVALHUB_FULL_API_VERSION_V1
+
+
+class EvalHubV1Alpha1(EvalHub):
+    api_version = EVALHUB_FULL_API_VERSION_V1ALPHA1
+
 
 TENANT_HEADER: str = "X-Tenant"
 

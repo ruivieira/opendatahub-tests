@@ -8,23 +8,13 @@ It is not available in RHOAI 2.25 or 3.4. These tests only apply to
 import pytest
 from kubernetes.dynamic import DynamicClient
 from ocp_resources.custom_resource_definition import CustomResourceDefinition
-from ocp_resources.evalhub import EvalHub
 from ocp_resources.namespace import Namespace
 
 from tests.ai_safety.evalhub.constants import (
     EVALHUB_API_GROUP,
-    EVALHUB_FULL_API_VERSION_V1,
-    EVALHUB_FULL_API_VERSION_V1ALPHA1,
     EVALHUB_PLURAL,
 )
-
-
-class EvalHubV1(EvalHub):
-    api_version = EVALHUB_FULL_API_VERSION_V1
-
-
-class EvalHubV1Alpha1(EvalHub):
-    api_version = EVALHUB_FULL_API_VERSION_V1ALPHA1
+from tests.ai_safety.evalhub.utils import EvalHubV1, EvalHubV1Alpha1
 
 
 @pytest.mark.smoke
