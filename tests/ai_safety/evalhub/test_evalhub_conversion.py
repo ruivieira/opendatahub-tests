@@ -70,7 +70,7 @@ def _cleanup_evalhub(admin_client: DynamicClient, name: str, namespace: str) -> 
     try:
         resource = _get_resource(admin_client, EVALHUB_FULL_API_VERSION_V1)
         resource.delete(name=name, namespace=namespace)
-    except (NotFoundError, ResourceNotFoundError):
+    except NotFoundError, ResourceNotFoundError:
         pass
 
 
