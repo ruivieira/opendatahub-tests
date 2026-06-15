@@ -63,7 +63,7 @@ class TestPreUpgradeEvalHub:
         )
         assert crd.exists, f"CRD {crd_name} not found"
 
-        served_versions = {v["name"] for v in crd.instance.spec.versions if v.get("served", False)}
+        served_versions = {version["name"] for version in crd.instance.spec.versions if version.get("served", False)}
         assert "v1alpha1" in served_versions
         assert "v1" in served_versions
 
@@ -118,7 +118,7 @@ class TestPostUpgradeEvalHub:
         )
         assert crd.exists, f"CRD {crd_name} not found after upgrade"
 
-        served_versions = {v["name"] for v in crd.instance.spec.versions if v.get("served", False)}
+        served_versions = {version["name"] for version in crd.instance.spec.versions if version.get("served", False)}
         assert "v1alpha1" in served_versions, f"v1alpha1 no longer served after upgrade; versions: {served_versions}"
         assert "v1" in served_versions, f"v1 no longer served after upgrade; versions: {served_versions}"
 
