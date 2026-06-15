@@ -9,9 +9,9 @@ from ocp_resources.service_account import ServiceAccount
 from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
 from tests.ai_safety.evalhub.constants import (
+    EVALHUB_COLLECTIONS_PATH,
     EVALHUB_FULL_API_VERSION_V1,
     EVALHUB_FULL_API_VERSION_V1ALPHA1,
-    EVALHUB_COLLECTIONS_PATH,
     EVALHUB_HEALTH_PATH,
     EVALHUB_HEALTH_STATUS_HEALTHY,
     EVALHUB_JOB_CONFIG_CLUSTERROLE,
