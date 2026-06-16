@@ -87,8 +87,7 @@ class TestEvalHubServiceMonitor:
 
         ns_selector = spec.namespaceSelector
         assert model_namespace.name in ns_selector.matchNames, (
-            f"Expected namespace '{model_namespace.name}' in namespaceSelector.matchNames, "
-            f"got {ns_selector.matchNames}"
+            f"Expected namespace '{model_namespace.name}' in namespaceSelector.matchNames, got {ns_selector.matchNames}"
         )
 
     def test_metrics_service_exists(
@@ -97,9 +96,7 @@ class TestEvalHubServiceMonitor:
         evalhub_metrics_service: Service,
     ) -> None:
         """Verify the metrics Service exists with correct spec."""
-        assert evalhub_metrics_service.exists, (
-            f"Metrics Service '{evalhub_metrics_service.name}' not found"
-        )
+        assert evalhub_metrics_service.exists, f"Metrics Service '{evalhub_metrics_service.name}' not found"
 
         spec = evalhub_metrics_service.instance.spec
         assert spec.type == "ClusterIP", f"Expected Service type 'ClusterIP', got '{spec.type}'"
@@ -108,9 +105,7 @@ class TestEvalHubServiceMonitor:
         assert len(ports) >= 1, "Expected at least 1 port on the metrics Service"
 
         metrics_port = next((p for p in ports if p.name == "metrics"), None)
-        assert metrics_port is not None, (
-            f"Expected port named 'metrics', found: {[p.name for p in ports]}"
-        )
+        assert metrics_port is not None, f"Expected port named 'metrics', found: {[p.name for p in ports]}"
         assert metrics_port.port == EVALHUB_METRICS_PORT, (
             f"Expected port {EVALHUB_METRICS_PORT}, got {metrics_port.port}"
         )
@@ -205,16 +200,15 @@ class TestEvalHubServiceMonitorCleanup:
             for sample in TimeoutSampler(
                 wait_timeout=60,
                 sleep=5,
-                func=lambda: not ServiceMonitor(
-                    client=admin_client,
-                    name=sm_name,
-                    namespace=model_namespace.name,
-                ).exists,
+                func=lambda: (
+                    not ServiceMonitor(
+                        client=admin_client,
+                        name=sm_name,
+                        namespace=model_namespace.name,
+                    ).exists
+                ),
             ):
                 if sample:
                     return
         except TimeoutExpiredError:
-            pytest.fail(
-                f"ServiceMonitor '{sm_name}' was not garbage-collected within 60s "
-                f"after EvalHub CR deletion"
-            )
+            pytest.fail(f"ServiceMonitor '{sm_name}' was not garbage-collected within 60s after EvalHub CR deletion")
