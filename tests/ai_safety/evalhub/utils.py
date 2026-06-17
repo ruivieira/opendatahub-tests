@@ -165,10 +165,16 @@ def validate_evalhub_request_denied(
     assert response.status_code in (400, 403), (
         f"Expected 400 or 403 for cross-tenant access, got {response.status_code}: {response.text}"
     )
-    data = response.json()
-    assert data.get("message_code") in ("unable_to_authorize_request", "forbidden"), (
-        f"Expected authorization denial, got message_code: {data.get('message_code')}"
-    )
+    try:
+        data = response.json()
+        assert data.get("message_code") in ("unable_to_authorize_request", "forbidden"), (
+            f"Expected authorization denial, got message_code: {data.get('message_code')}"
+        )
+    except ValueError:
+        # kube-rbac-proxy returns plain-text 403 with no JSON body
+        assert any(kw in response.text.lower() for kw in ("forbidden", "unauthorized", "auth")), (
+            f"Expected auth-related error in response body for cross-tenant GET, got: {response.text}"
+        )
 
 
 def validate_evalhub_request_no_tenant(
