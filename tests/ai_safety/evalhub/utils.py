@@ -287,10 +287,9 @@ def validate_evalhub_post_denied(
         f"Expected 400 or 403 for cross-tenant POST, got {response.status_code}: {response.text}"
     )
     try:
-        body = response.json()
+        body_str = str(response.json()).lower()
     except ValueError:
-        body = {}
-    body_str = str(body).lower()
+        body_str = response.text.lower()
     assert any(kw in body_str for kw in ("unauthorized", "forbidden", "auth")), (
         f"Expected auth-related error in response body for cross-tenant POST, got: {response.text}"
     )
@@ -534,10 +533,9 @@ def validate_evalhub_delete_denied(
         f"Expected 400 or 403 for cross-tenant DELETE, got {response.status_code}: {response.text}"
     )
     try:
-        body = response.json()
+        body_str = str(response.json()).lower()
     except ValueError:
-        body = {}
-    body_str = str(body).lower()
+        body_str = response.text.lower()
     assert any(kw in body_str for kw in ("unauthorized", "forbidden", "auth")), (
         f"Expected auth-related error in response body for cross-tenant DELETE, got: {response.text}"
     )
