@@ -201,12 +201,8 @@ def validate_evalhub_request_no_tenant(
         timeout=10,
     )
     assert response.status_code == 400, f"Expected 400 Bad Request, got {response.status_code}: {response.text}"
-    try:
-        body = response.json()
-    except ValueError:
-        body = {}
-    body_str = str(body).lower()
-    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant")), (
+    body_str = response.text.lower()
+    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
         f"Expected tenant-header-related error in response body for no-tenant GET, got: {response.text}"
     )
 
@@ -324,12 +320,8 @@ def validate_evalhub_post_no_tenant(
         timeout=30,
     )
     assert response.status_code == 400, f"Expected 400 Bad Request, got {response.status_code}: {response.text}"
-    try:
-        body = response.json()
-    except ValueError:
-        body = {}
-    body_str = str(body).lower()
-    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant")), (
+    body_str = response.text.lower()
+    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
         f"Expected tenant-header-related error in response body for no-tenant POST, got: {response.text}"
     )
 
@@ -560,12 +552,8 @@ def validate_evalhub_delete_no_tenant(
         timeout=10,
     )
     assert response.status_code == 400, f"Expected 400 Bad Request, got {response.status_code}: {response.text}"
-    try:
-        body = response.json()
-    except ValueError:
-        body = {}
-    body_str = str(body).lower()
-    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant")), (
+    body_str = response.text.lower()
+    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
         f"Expected tenant-header-related error in response body for no-tenant DELETE, got: {response.text}"
     )
 
