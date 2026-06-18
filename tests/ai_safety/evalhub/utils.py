@@ -207,10 +207,15 @@ def validate_evalhub_request_no_tenant(
         timeout=10,
     )
     assert response.status_code == 400, f"Expected 400 Bad Request, got {response.status_code}: {response.text}"
-    body_str = response.text.lower()
-    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
-        f"Expected tenant-header-related error in response body for no-tenant GET, got: {response.text}"
-    )
+    try:
+        assert response.json().get("message_code") == "missing_tenant_header", (
+            f"Expected message_code 'missing_tenant_header' for no-tenant GET, got: {response.text}"
+        )
+    except requests.exceptions.JSONDecodeError:
+        body_str = response.text.lower()
+        assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
+            f"Expected tenant-header-related error in response body for no-tenant GET, got: {response.text}"
+        )
 
 
 def submit_evalhub_job(
@@ -325,10 +330,15 @@ def validate_evalhub_post_no_tenant(
         timeout=30,
     )
     assert response.status_code == 400, f"Expected 400 Bad Request, got {response.status_code}: {response.text}"
-    body_str = response.text.lower()
-    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
-        f"Expected tenant-header-related error in response body for no-tenant POST, got: {response.text}"
-    )
+    try:
+        assert response.json().get("message_code") == "missing_tenant_header", (
+            f"Expected message_code 'missing_tenant_header' for no-tenant POST, got: {response.text}"
+        )
+    except requests.exceptions.JSONDecodeError:
+        body_str = response.text.lower()
+        assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
+            f"Expected tenant-header-related error in response body for no-tenant POST, got: {response.text}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -556,10 +566,15 @@ def validate_evalhub_delete_no_tenant(
         timeout=10,
     )
     assert response.status_code == 400, f"Expected 400 Bad Request, got {response.status_code}: {response.text}"
-    body_str = response.text.lower()
-    assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
-        f"Expected tenant-header-related error in response body for no-tenant DELETE, got: {response.text}"
-    )
+    try:
+        assert response.json().get("message_code") == "missing_tenant_header", (
+            f"Expected message_code 'missing_tenant_header' for no-tenant DELETE, got: {response.text}"
+        )
+    except requests.exceptions.JSONDecodeError:
+        body_str = response.text.lower()
+        assert any(kw in body_str for kw in ("tenant", "missing tenant header", "x-tenant", "malformed")), (
+            f"Expected tenant-header-related error in response body for no-tenant DELETE, got: {response.text}"
+        )
 
 
 # ---------------------------------------------------------------------------
