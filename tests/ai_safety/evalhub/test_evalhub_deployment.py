@@ -72,9 +72,7 @@ class TestEvalHubDeployment:
         assert "kube-rbac-proxy" in container_names, (
             f"Expected container 'kube-rbac-proxy' in pod, found: {container_names}"
         )
-        assert len(containers) == 2, (
-            f"Expected 2 containers in EvalHub pod, found {len(containers)}: {container_names}"
-        )
+        assert len(containers) == 2, f"Expected 2 containers in EvalHub pod, found {len(containers)}: {container_names}"
 
         # Verify pod labels match what the operator sets in deployment.go lines 64-68
         pod_labels = pod.instance.metadata.labels
