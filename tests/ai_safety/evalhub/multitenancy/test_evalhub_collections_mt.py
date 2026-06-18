@@ -587,9 +587,14 @@ class TestEvalHubCollectionsFeature:
             verify=evalhub_mt_ca_bundle_file,
             timeout=10,
         )
-        assert resp.status_code in (403, 404), (
-            f"Expected 403 or 404 for {method} {path_suffix}, got {resp.status_code}: {resp.text}"
-        )
+        if path_suffix == "/":
+            assert resp.status_code in (403, 404), (
+                f"Expected 403 or 404 for {method} {path_suffix}, got {resp.status_code}: {resp.text}"
+            )
+        else:
+            assert resp.status_code == 404, (
+                f"Expected 404 for {method} {path_suffix}, got {resp.status_code}: {resp.text}"
+            )
 
     # ------------------------------------------------------------------
     # Update (PUT) lifecycle
