@@ -53,9 +53,7 @@ class TestEvalHubProvidersAgentic:
             (p for p in items if p.get("resource", {}).get("id") == LM_EVALUATION_HARNESS_PROVIDER_ID),
             None,
         )
-        assert provider is not None, (
-            f"Provider '{LM_EVALUATION_HARNESS_PROVIDER_ID}' not found in providers list"
-        )
+        assert provider is not None, f"Provider '{LM_EVALUATION_HARNESS_PROVIDER_ID}' not found in providers list"
         assert provider.get("agent") is not None, (
             f"Provider '{LM_EVALUATION_HARNESS_PROVIDER_ID}' missing 'agent' metadata block"
         )
@@ -79,9 +77,7 @@ class TestEvalHubProvidersAgentic:
 
         agent = response.json().get("agent", {})
         assert agent, f"Provider '{LM_EVALUATION_HARNESS_PROVIDER_ID}' has no 'agent' field"
-        assert agent.get("target_type") == "model", (
-            f"Expected target_type='model', got '{agent.get('target_type')}'"
-        )
+        assert agent.get("target_type") == "model", f"Expected target_type='model', got '{agent.get('target_type')}'"
 
     def test_lmeval_agent_evaluates_is_non_empty(
         self,
@@ -101,9 +97,7 @@ class TestEvalHubProvidersAgentic:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
 
         evaluates = response.json().get("agent", {}).get("evaluates", [])
-        assert isinstance(evaluates, list) and evaluates, (
-            f"Expected non-empty 'evaluates' list, got: {evaluates}"
-        )
+        assert isinstance(evaluates, list) and evaluates, f"Expected non-empty 'evaluates' list, got: {evaluates}"
         for expected_category in ("accuracy", "reasoning"):
             assert expected_category in evaluates, (
                 f"Expected category '{expected_category}' in agent.evaluates, got: {evaluates}"
@@ -127,12 +121,8 @@ class TestEvalHubProvidersAgentic:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
 
         summary = response.json().get("agent", {}).get("summary", "")
-        assert isinstance(summary, str) and summary, (
-            f"Expected non-empty string for agent.summary, got: {summary!r}"
-        )
-        assert len(summary) <= 200, (
-            f"agent.summary exceeds 200 characters ({len(summary)}): {summary!r}"
-        )
+        assert isinstance(summary, str) and summary, f"Expected non-empty string for agent.summary, got: {summary!r}"
+        assert len(summary) <= 200, f"agent.summary exceeds 200 characters ({len(summary)}): {summary!r}"
 
     def test_all_providers_with_agent_have_valid_target_type(
         self,
@@ -161,9 +151,7 @@ class TestEvalHubProvidersAgentic:
             if target_type not in self._VALID_TARGET_TYPES:
                 invalid.append(f"{provider_id}: target_type={target_type!r}")
 
-        assert not invalid, (
-            f"Providers with invalid target_type (must be one of {self._VALID_TARGET_TYPES}): {invalid}"
-        )
+        assert not invalid, f"Providers with invalid target_type (must be one of {self._VALID_TARGET_TYPES}): {invalid}"
 
     def test_single_provider_endpoint_exposes_agent_metadata(
         self,
@@ -186,9 +174,7 @@ class TestEvalHubProvidersAgentic:
         )
         body = response.json()
         assert body.get("resource", {}).get("id") == LM_EVALUATION_HARNESS_PROVIDER_ID
-        assert body.get("agent") is not None, (
-            "Single-provider endpoint did not return 'agent' metadata block"
-        )
+        assert body.get("agent") is not None, "Single-provider endpoint did not return 'agent' metadata block"
         assert body["agent"].get("target_type") == "model", (
             f"Expected agent.target_type='model', got '{body['agent'].get('target_type')}'"
         )
