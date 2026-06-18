@@ -56,6 +56,9 @@ EVALHUB_USER_ROLE_RULES: list[dict[str, list[str]]] = [
     },
 ]
 
+# Provider IDs for system providers
+LM_EVALUATION_HARNESS_PROVIDER_ID: str = "lm_evaluation_harness"
+
 # Garak provider
 GARAK_PROVIDER_ID: str = "garak-kfp"
 GARAK_BENCHMARK_ID: str = "intents"
